@@ -56,8 +56,14 @@
     gtag('event', name, params);
   }
 
+  // Step-specific event names (fe_view, fe_buy_click, oto1_view, ...) so funnels can be built from event names alone
+  var KEY = { sales: 'fe', oto1: 'oto1', downsell: 'ds', oto2: 'oto2' }[page];
+
   // ---- 4. Page-level funnel events ----
-  if (item) ev('view_item', { currency: 'USD', value: info.price, items: item, offer: info.label });
+  if (item) {
+    ev('view_item', { currency: 'USD', value: info.price, items: item, offer: info.label });
+    ev(KEY + '_view', { offer: info.label, value: info.price, currency: 'USD' });
+  }
 
   // Reaching an upsell page means the previous step was bought or declined (WarriorPlus redirects).
   // Fired once per browser per page so reloads do not double count.
@@ -79,8 +85,10 @@
       // which buy button on the page (1st, 2nd, ...) tells you which section converts
       var all = Array.prototype.slice.call(document.querySelectorAll('a[href*="/buy/"]'));
       ev('begin_checkout', { currency: 'USD', value: info.price || 0, items: item, offer: info.label, button_text: text, button_position: all.indexOf(a) + 1 });
+      if (KEY) ev(KEY + '_buy_click', { offer: info.label, value: info.price || 0, currency: 'USD', button_position: all.indexOf(a) + 1 });
     } else if (/warriorplus\.com\/o\/nothanks\//.test(href)) {
       ev('decline_offer', { offer: info.label, value: info.price || 0, currency: 'USD', button_text: text });
+      if (KEY) ev(KEY + '_no_thanks', { offer: info.label });
     } else if (/warriorplus\.com\/aff-offer\//.test(href)) {
       ev('affiliate_link_request', { button_text: text });
     } else if (/^mailto:/.test(href)) {
